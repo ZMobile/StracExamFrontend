@@ -2,6 +2,7 @@ package org.strac.view.dialog;
 
 import org.strac.model.DriveFile;
 import org.strac.service.GoogleDriveService;
+import org.strac.view.FileViewerManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -16,11 +17,13 @@ public class DeleteDialog extends JDialog {
     private JTable fileTable;
     private DefaultTableModel tableModel;
     private GoogleDriveService driveService;
+    private FileViewerManager fileViewerManager;
 
-    public DeleteDialog(JFrame parent, List<DriveFile> selectedFiles, GoogleDriveService driveService) {
+    public DeleteDialog(JFrame parent, List<DriveFile> selectedFiles, GoogleDriveService driveService, FileViewerManager fileViewerManager) {
         super(parent, "Delete the selected files?", true);
 
         this.driveService = driveService;
+        this.fileViewerManager = fileViewerManager;
         this.filesToDelete = consolidateFiles(selectedFiles);
 
         setLayout(new BorderLayout());
@@ -92,10 +95,13 @@ public class DeleteDialog extends JDialog {
 
     private void confirmDeletion() {
         // Perform the deletion action
+        List<String> fileIds = new ArrayList<>();
         for (DriveFile file : filesToDelete) {
             System.out.println("Deleting: " + file.getName());
             driveService.deleteFile(file.getId());
+            fileIds.add(file.getId());
         }
+        fileViewerManager.deleteFilesRecursively(fileIds);
 
         JOptionPane.showMessageDialog(this, "Files deleted successfully!");
         dispose();

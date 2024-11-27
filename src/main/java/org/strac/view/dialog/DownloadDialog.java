@@ -125,9 +125,9 @@ public class DownloadDialog extends JDialog {
         // Perform the download action
         for (DriveFile file : filesToDownload) {
             if (file.getMimeType().equals("application/vnd.google-apps.folder")) {
-                driveService.downloadFolder(file.getId(), destinationPath);
+                driveService.downloadFolder(file, destinationPath);
             } else {
-                driveService.downloadFile(file.getId(), destinationPath);
+                driveService.downloadFile(file, destinationPath);
             }
         }
 

@@ -1,19 +1,22 @@
 package org.strac.view.dialog;
 
 import org.strac.service.GoogleDriveAuthenticatorService;
+import org.strac.view.FileViewerManager;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class SettingsDialog extends JDialog {
     private GoogleDriveAuthenticatorService authenticatorService;
+    private FileViewerManager fileViewerManager;
     private JLabel authStatusLabel;
     private JButton authButton;
 
-    public SettingsDialog(JFrame parent, GoogleDriveAuthenticatorService authenticatorService) {
+    public SettingsDialog(JFrame parent, GoogleDriveAuthenticatorService authenticatorService, FileViewerManager fileViewerManager) {
         super(parent, "Settings", true);
 
         this.authenticatorService = authenticatorService;
+        this.fileViewerManager = fileViewerManager;
 
         setLayout(new BorderLayout());
         setSize(400, 200);
@@ -55,6 +58,7 @@ public class SettingsDialog extends JDialog {
             authStatusLabel.setText("You are not authenticated.");
             authButton.setText("Authenticate");
         }
+        fileViewerManager.refreshFileTree();
     }
 
     private void handleAuthButtonClick() {

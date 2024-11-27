@@ -27,14 +27,12 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
     }
 
     private Request.Builder createRequestBuilder(HttpUrl url, String authToken) {
-        Request.Builder builder = new Request.Builder().url(url);
-
-        // Load the JWT token and add it to the Authorization header
-        if (authToken != null) {
-            builder.addHeader("Authorization", "Bearer " + authToken);
+        if (authToken == null || authToken.isEmpty()) {
+            throw new IllegalArgumentException("Authorization token cannot be null or empty.");
         }
-
-        return builder;
+        return new Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Bearer " + authToken);
     }
 
     @Override
@@ -62,7 +60,7 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
     }
 
     @Override
-    public GoogleDriveResponseResource uploadFile(String parentId, String filePath, String authToken) {
+    public GoogleDriveResponseResource uploadFile(String parentId, String authToken, String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
             throw new IllegalArgumentException("File does not exist: " + filePath);
@@ -95,9 +93,9 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
     }
 
     @Override
-    public GoogleDriveResponseResource downloadFile(String fileId, String destinationPath, String authToken) {
+    public GoogleDriveResponseResource downloadFile(DriveFile driveFile, String authToken, String destinationPath) {
         HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(BASE_URL + "/download/file")).newBuilder()
-                .addQueryParameter("fileId", fileId);
+                .addQueryParameter("fileId", driveFile.getId());
 
         Request request = createRequestBuilder(urlBuilder.build(), authToken)
                 .get()
@@ -105,8 +103,33 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
 
         try (Response response = httpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
-                try (FileOutputStream fos = new FileOutputStream(destinationPath)) {
-                    fos.write(response.body().bytes());
+                byte[] fileBytes = response.body().bytes();
+
+                String extension = driveFile.getExtension();
+
+                // Append extension if not already present
+                String fileName = driveFile.getName();
+                if (!fileName.endsWith(extension)) {
+                    fileName += extension;
+                }
+
+                File destinationFile = new File(destinationPath, fileName);
+                System.out.println("Destination path: " + destinationPath);
+                if (destinationFile.isDirectory()) {
+                    throw new IllegalArgumentException("Destination path must include a file name, not just a directory.");
+                }
+                // Ensure the parent directories exist
+                File parentDir = destinationFile.getParentFile();
+                if (parentDir != null && !parentDir.exists()) {
+                    boolean dirsCreated = parentDir.mkdirs();
+                    if (!dirsCreated) {
+                        throw new IOException("Failed to create parent directories for destination path.");
+                    }
+                }
+
+                // Save the file to the specified destination path
+                try (FileOutputStream fos = new FileOutputStream(destinationFile)) {
+                    fos.write(fileBytes);
                 }
                 return new GoogleDriveResponseResource(true, response.code());
             } else {
@@ -118,9 +141,9 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
     }
 
     @Override
-    public GoogleDriveResponseResource downloadFolder(String folderId, String destinationPath, String authToken) {
+    public GoogleDriveResponseResource downloadFolder(DriveFile driveFile, String authToken, String destinationPath) {
         HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(BASE_URL + "/download/folder")).newBuilder()
-                .addQueryParameter("folderId", folderId);
+                .addQueryParameter("folderId", driveFile.getId());
 
         Request request = createRequestBuilder(urlBuilder.build(), authToken)
                 .get()
@@ -128,9 +151,30 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
 
         try (Response response = httpClient.newCall(request).execute()) {
             if (response.isSuccessful() && response.body() != null) {
-                try (FileOutputStream fos = new FileOutputStream(destinationPath)) {
-                    fos.write(response.body().bytes());
+                byte[] folderBytes = response.body().bytes();
+
+                if (destinationPath == null || destinationPath.isEmpty()) {
+                    throw new IllegalArgumentException("Destination path must be provided for the parent folder.");
                 }
+
+                // Ensure destination path exists and is a directory
+                File parentFolder = new File(destinationPath);
+                if (!parentFolder.exists()) {
+                    boolean dirsCreated = parentFolder.mkdirs();
+                    if (!dirsCreated) {
+                        throw new IOException("Failed to create parent folder at: " + destinationPath);
+                    }
+                } else if (!parentFolder.isDirectory()) {
+                    throw new IllegalArgumentException("Destination path must be a directory.");
+                }
+
+                // Save the zipped folder to the specified parent folder
+                File zipFile = new File(parentFolder, driveFile.getName() + ".zip");
+
+                try (FileOutputStream fos = new FileOutputStream(zipFile)) {
+                    fos.write(folderBytes);
+                }
+
                 return new GoogleDriveResponseResource(true, response.code());
             } else {
                 return new GoogleDriveResponseResource(false, response.code());

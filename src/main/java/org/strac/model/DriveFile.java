@@ -6,6 +6,7 @@ public class DriveFile {
     private String mimeType;
     private String parentId;
     private String path;
+    private String extension;
 
     // Constructor
     public DriveFile(String id, String name, String mimeType, String parentId, String path) {
@@ -55,6 +56,14 @@ public class DriveFile {
 
     public void setPath(String path) {
         this.path = path;
+    }
+
+    public String getExtension() {
+        return extension;
+    }
+
+    public void setExtension(String extension) {
+        this.extension = extension;
     }
 
     @Override

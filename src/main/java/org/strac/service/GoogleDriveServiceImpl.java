@@ -10,21 +10,24 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     private final GoogleDriveDao driveDao;
     private final GoogleDriveAuthenticatorService driveAuthenticatorService;
     private final SimpleTokenStorageService simpleTokenStorageService;
+    private final MimeTypeToExtensionTransformerService mimeTypeToExtensionTransformerService;
 
     public GoogleDriveServiceImpl(GoogleDriveDao driveDao,
-                                    GoogleDriveAuthenticatorService driveAuthenticatorService,
+                                  GoogleDriveAuthenticatorService driveAuthenticatorService,
                                   SimpleTokenStorageService simpleTokenStorageService) {
         this.driveDao = driveDao;
         this.driveAuthenticatorService = driveAuthenticatorService;
         this.simpleTokenStorageService = simpleTokenStorageService;
+        this.mimeTypeToExtensionTransformerService = new MimeTypeToExtensionTransformerServiceImpl();
     }
 
-    //We're going to fetch the credentials here and test the access token,
-    //Then have a fallback for fetching the refresh token.
     public List<DriveFile> listFiles(String parentId) {
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
         GoogleDriveFileQueryResponseResource googleDriveFileQueryResponseResource = driveDao.listFiles(parentId, accessToken);
         if (googleDriveFileQueryResponseResource.getGoogleDriveResponseResource().isSuccess()) {
+            for (DriveFile file : googleDriveFileQueryResponseResource.getFiles()) {
+                file.setExtension(mimeTypeToExtensionTransformerService.getFileExtensionFromMimeType(file.getMimeType()));
+            }
             return googleDriveFileQueryResponseResource.getFiles();
         } else if (googleDriveFileQueryResponseResource.getGoogleDriveResponseResource().getCode() == 403) {
             driveAuthenticatorService.refreshToken();
@@ -41,17 +44,17 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
 
     public void uploadFile(String parentId, String filePath) {
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
-        driveDao.uploadFile(parentId, filePath, accessToken);
+        driveDao.uploadFile(parentId, accessToken, filePath);
     }
 
-    public void downloadFile(String fileId, String destinationPath) {
+    public void downloadFile(DriveFile driveFile, String destinationPath) {
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
-        driveDao.downloadFile(fileId, destinationPath, accessToken);
+        driveDao.downloadFile(driveFile, accessToken, destinationPath);
     }
 
-    public void downloadFolder(String fileId, String destinationPath) {
+    public void downloadFolder(DriveFile driveFile, String destinationPath) {
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
-        driveDao.downloadFolder(fileId, destinationPath, accessToken);
+        driveDao.downloadFolder(driveFile, accessToken, destinationPath);
     }
 
     public void deleteFile(String fileId) {

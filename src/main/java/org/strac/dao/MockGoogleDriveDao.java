@@ -50,13 +50,13 @@ public class MockGoogleDriveDao implements GoogleDriveDao {
     }
 
     @Override
-    public GoogleDriveResponseResource downloadFile(String fileId, String destinationPath, String authToken) {
-        System.out.println("Simulating download of file ID: " + fileId + " to destination: " + destinationPath);
+    public GoogleDriveResponseResource downloadFile(DriveFile driveFile, String destinationPath, String authToken) {
+        System.out.println("Simulating download of file ID: " + driveFile.getId() + " to destination: " + destinationPath);
         return new GoogleDriveResponseResource(true, 200);
     }
 
     @Override
-    public GoogleDriveResponseResource downloadFolder(String folderId, String destinationPath, String authToken) {
+    public GoogleDriveResponseResource downloadFolder(DriveFile driveFile, String destinationPath, String authToken) {
         return new GoogleDriveResponseResource(true, 200);
     }
 

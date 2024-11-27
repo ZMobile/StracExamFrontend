@@ -2,6 +2,7 @@ package org.strac.view.dialog;
 
 import org.strac.model.DriveFile;
 import org.strac.service.GoogleDriveService;
+import org.strac.view.FileViewerManager;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -22,12 +23,14 @@ public class UploadDialog extends JDialog {
     private JTree fileTree;
     private DefaultTreeModel treeModel;
     private GoogleDriveService driveService;
+    private FileViewerManager fileViewerManager;
     private DriveFile selectedDestinationFolder;
 
-    public UploadDialog(JFrame parent, GoogleDriveService driveService, DefaultTreeModel treeModel) {
+    public UploadDialog(JFrame parent, GoogleDriveService driveService, FileViewerManager fileViewerManager, DefaultTreeModel treeModel) {
         super(parent, "Upload Files", true);
 
         this.driveService = driveService;
+        this.fileViewerManager = fileViewerManager;
         this.treeModel = treeModel;
 
         setLayout(new BorderLayout());
@@ -141,6 +144,7 @@ public class UploadDialog extends JDialog {
             driveService.uploadFile(selectedDestinationFolder.getId(), file.getPath());
         }
 
+        fileViewerManager.refreshFolder(selectedDestinationFolder.getId());
         JOptionPane.showMessageDialog(this, "Upload started!");
         dispose();
     }

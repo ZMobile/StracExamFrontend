@@ -31,10 +31,14 @@ public class GoogleDriveFileViewer extends JFrame {
     private GoogleDriveService driveService;
     private GoogleDriveAuthenticatorService authenticatorService;
 
+    private FileViewerManager fileViewerManager;
+
     public GoogleDriveFileViewer(GoogleDriveService driveService,
                                  GoogleDriveAuthenticatorService authenticatorService) {
         this.driveService = driveService;
         this.authenticatorService = authenticatorService;
+
+        this.fileViewerManager = new FileViewerManager();
 
         setTitle("Google Drive File Viewer");
         setSize(800, 600);
@@ -44,6 +48,7 @@ public class GoogleDriveFileViewer extends JFrame {
         initializeToolbar();
         initializeFileTree();
         initializeContextMenu();
+        fileViewerManager.initializeFileViewerManager(this, fileTree, treeModel, toolbar, selectedFiles, driveService, authenticatorService);
         JScrollPane scrollPane = new JScrollPane(fileTree);
         scrollPane.addMouseListener(new GlobalMouseAdapter());
         add(toolbar, BorderLayout.NORTH);
@@ -62,6 +67,11 @@ public class GoogleDriveFileViewer extends JFrame {
                 }
             }
         }, AWTEvent.MOUSE_EVENT_MASK);
+
+        fileViewerManager.refreshFileTree();
+        if (!authenticatorService.isAuthenticated()) {
+            showSettingsDialog();
+        }
     }
 
     private void initializeToolbar() {
@@ -79,17 +89,23 @@ public class GoogleDriveFileViewer extends JFrame {
         JButton uploadButton = createModernButton("Upload");
         uploadButton.addActionListener(e -> uploadFileToSelectedFolder());
 
+        JButton refreshButton = createModernButton("Refresh");
+        refreshButton.addActionListener(e -> fileViewerManager.refreshFileTree());
+
         JButton settingsButton = createModernButton("Settings");
         settingsButton.addActionListener(e -> showSettingsDialog());
+
 
         // Add buttons to the toolbar
         toolbar.add(downloadButton);
         toolbar.add(deleteButton);
         toolbar.add(uploadButton);
+        toolbar.add(refreshButton);
 
         // Add a horizontal glue to push the settings button to the right
         toolbar.add(Box.createHorizontalGlue());
         toolbar.add(settingsButton);
+
     }
 
     private JButton createModernButton(String text) {
@@ -207,7 +223,7 @@ public class GoogleDriveFileViewer extends JFrame {
             @Override
             public void treeWillExpand(TreeExpansionEvent event) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) event.getPath().getLastPathComponent();
-                loadFiles(node); // Load files when a node is expanded
+                fileViewerManager.loadFiles(node); // Load files when a node is expanded
             }
 
             @Override
@@ -218,9 +234,23 @@ public class GoogleDriveFileViewer extends JFrame {
 
         fileTree.addMouseListener(new DragSelectionMouseAdapter());
         fileTree.addMouseMotionListener(new DragSelectionMouseMotionAdapter());
+    }
 
-        // Trigger loading files for the root node
-        loadFiles(root);
+    private void deleteFilesRecursively(DefaultMutableTreeNode node, List<String> fileIds) {
+        for (int i = 0; i < node.getChildCount(); i++) {
+            DefaultMutableTreeNode childNode = (DefaultMutableTreeNode) node.getChildAt(i);
+            Object userObject = childNode.getUserObject();
+
+            if (userObject instanceof DriveFile driveFile) {
+                if (fileIds.contains(driveFile.getId())) {
+                    node.remove(childNode);
+                    i--; // Adjust the index after removal
+                }
+            }
+
+            // Recursively check child nodes
+            deleteFilesRecursively(childNode, fileIds);
+        }
     }
 
     private class DragSelectionMouseAdapter extends MouseAdapter {
@@ -308,37 +338,6 @@ public class GoogleDriveFileViewer extends JFrame {
         return null;
     }
 
-    private void loadFiles(DefaultMutableTreeNode parentNode) {
-        SwingWorker<Void, DriveFile> worker = new SwingWorker<>() {
-            @Override
-            protected Void doInBackground() {
-                String parentId = parentNode.getUserObject() instanceof DriveFile
-                        ? ((DriveFile) parentNode.getUserObject()).getId()
-                        : "root";
-
-                List<DriveFile> files = driveService.listFiles(parentId); // Call the service
-                for (DriveFile file : files) {
-                    publish(file);
-                }
-                return null;
-            }
-
-            @Override
-            protected void process(List<DriveFile> files) {
-                parentNode.removeAllChildren(); // Clear previous children
-                for (DriveFile file : files) {
-                    DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(file);
-                    parentNode.add(childNode);
-                    if ("application/vnd.google-apps.folder".equals(file.getMimeType())) {
-                        childNode.add(new DefaultMutableTreeNode("Loading..."));
-                    }
-                }
-                treeModel.reload(parentNode); // Refresh the tree model
-            }
-        };
-        worker.execute();
-    }
-
     private void downloadSelectedFiles() {
         if (selectedFiles.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No files selected for download.", "Warning", JOptionPane.WARNING_MESSAGE);
@@ -355,17 +354,17 @@ public class GoogleDriveFileViewer extends JFrame {
             return;
         }
 
-        DeleteDialog deleteDialog = new DeleteDialog(this, new ArrayList<>(selectedFiles), driveService);
+        DeleteDialog deleteDialog = new DeleteDialog(this, new ArrayList<>(selectedFiles), driveService, fileViewerManager);
         deleteDialog.setVisible(true);
     }
 
     private void uploadFileToSelectedFolder() {
-        UploadDialog uploadDialog = new UploadDialog(this, driveService, treeModel);
+        UploadDialog uploadDialog = new UploadDialog(this, driveService, fileViewerManager, treeModel);
         uploadDialog.setVisible(true);
     }
 
     private void showSettingsDialog() {
-        SettingsDialog settingsDialog = new SettingsDialog(this, authenticatorService);
+        SettingsDialog settingsDialog = new SettingsDialog(this, authenticatorService, fileViewerManager);
         settingsDialog.setVisible(true);
     }
 

@@ -9,9 +9,9 @@ public interface GoogleDriveService {
 
     void uploadFile(String parentId, String filePath);
 
-    void downloadFile(String fileId, String destinationPath);
+    void downloadFile(DriveFile driveFile, String destinationPath);
 
-    void downloadFolder(String fileId, String destinationPath);
+    void downloadFolder(DriveFile driveFile, String destinationPath);
 
     void deleteFile(String fileId);
 }
