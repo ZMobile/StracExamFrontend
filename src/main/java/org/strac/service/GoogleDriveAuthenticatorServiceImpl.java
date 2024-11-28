@@ -79,9 +79,7 @@ public class GoogleDriveAuthenticatorServiceImpl implements GoogleDriveAuthentic
                 if (code != null) {
                     try {
                         // Handle the callback and fetch the JWT token
-                        System.out.println("Code: " + code);
                         String jsonData = dao.handleCallback(code);
-                        System.out.println("jsonData = " + jsonData);
                         tokenStorage.saveCredentialsJson(jsonData);
                         responseMessage = "Authentication completed successfully. You may close this browser.";
                     } catch (Exception e) {

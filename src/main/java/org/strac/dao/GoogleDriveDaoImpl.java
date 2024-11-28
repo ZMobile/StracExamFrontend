@@ -114,7 +114,6 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
                 }
 
                 File destinationFile = new File(destinationPath, fileName);
-                System.out.println("Destination path: " + destinationPath);
                 if (destinationFile.isDirectory()) {
                     throw new IllegalArgumentException("Destination path must include a file name, not just a directory.");
                 }
