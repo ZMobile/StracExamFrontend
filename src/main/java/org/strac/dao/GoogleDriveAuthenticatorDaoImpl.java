@@ -5,11 +5,13 @@ import okhttp3.*;
 import java.io.IOException;
 
 public class GoogleDriveAuthenticatorDaoImpl implements GoogleDriveAuthenticatorDao {
-    private static final String BASE_URL = "http://localhost:8080/oauth2";
+    private final String URL;
     private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json");
     private final OkHttpClient httpClient;
 
-    public GoogleDriveAuthenticatorDaoImpl() {
+    public GoogleDriveAuthenticatorDaoImpl(String BASE_URL) {
+        String ENDPOINT = "/oauth2";
+        this.URL = BASE_URL + ENDPOINT;
         this.httpClient = new OkHttpClient();
     }
 
@@ -21,7 +23,7 @@ public class GoogleDriveAuthenticatorDaoImpl implements GoogleDriveAuthenticator
      */
     public String getAuthorizationUrl() throws IOException {
         Request request = new Request.Builder()
-                .url(BASE_URL + "/auth")
+                .url(URL + "/auth")
                 .build();
 
         try (Response response = httpClient.newCall(request).execute()) {
@@ -42,7 +44,7 @@ public class GoogleDriveAuthenticatorDaoImpl implements GoogleDriveAuthenticator
      * @return JWT token containing the access and refresh tokens.
      */
     public String handleCallback(String authorizationCode) throws IOException {
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(BASE_URL + "/callback").newBuilder();
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(URL + "/callback").newBuilder();
         urlBuilder.addQueryParameter("code", authorizationCode);
 
         Request request = new Request.Builder()
@@ -67,7 +69,7 @@ public class GoogleDriveAuthenticatorDaoImpl implements GoogleDriveAuthenticator
      */
     public String refreshAccessToken(String refreshToken) throws IOException {
         Request request = new Request.Builder()
-                .url(BASE_URL + "/refresh")
+                .url(URL + "/refresh")
                 .post(RequestBody.create("", JSON_MEDIA_TYPE)) // Empty POST body
                 .header("Authorization", "Bearer " + refreshToken)
                 .build();

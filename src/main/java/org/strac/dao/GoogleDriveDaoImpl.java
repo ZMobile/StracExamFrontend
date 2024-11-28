@@ -16,12 +16,13 @@ import java.util.List;
 import java.util.Objects;
 
 public class GoogleDriveDaoImpl implements GoogleDriveDao {
-    private static final String BASE_URL = "http://localhost:8080/api/drive";
-    private static final MediaType JSON_MEDIA_TYPE = MediaType.parse("application/json");
+    private final String URL;
     private final OkHttpClient httpClient;
     private final Gson gson;
 
-    public GoogleDriveDaoImpl(Gson gson) {
+    public GoogleDriveDaoImpl(String BASE_URL, Gson gson) {
+        String ENDPOINT = "/api/drive";
+        this.URL = BASE_URL + ENDPOINT;
         this.httpClient = new OkHttpClient();
         this.gson = gson;
     }
@@ -37,7 +38,7 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
 
     @Override
     public GoogleDriveFileQueryResponseResource listFiles(String parentId, String authToken) {
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(BASE_URL + "/files").newBuilder();
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(URL + "/files").newBuilder();
         if (parentId != null && !parentId.isEmpty()) {
             urlBuilder.addQueryParameter("parentId", parentId);
         }
@@ -66,7 +67,7 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
             throw new IllegalArgumentException("File does not exist: " + filePath);
         }
 
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(BASE_URL + "/upload").newBuilder();
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(URL + "/upload").newBuilder();
         if (parentId != null && !parentId.isEmpty()) {
             urlBuilder.addQueryParameter("folderId", parentId);
         }
@@ -94,7 +95,7 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
 
     @Override
     public GoogleDriveResponseResource downloadFile(DriveFile driveFile, String authToken, String destinationPath) {
-        HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(BASE_URL + "/download/file")).newBuilder()
+        HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(URL + "/download/file")).newBuilder()
                 .addQueryParameter("fileId", driveFile.getId());
 
         Request request = createRequestBuilder(urlBuilder.build(), authToken)
@@ -142,7 +143,7 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
 
     @Override
     public GoogleDriveResponseResource downloadFolder(DriveFile driveFile, String authToken, String destinationPath) {
-        HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(BASE_URL + "/download/folder")).newBuilder()
+        HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(URL + "/download/folder")).newBuilder()
                 .addQueryParameter("folderId", driveFile.getId());
 
         Request request = createRequestBuilder(urlBuilder.build(), authToken)
@@ -186,7 +187,7 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
 
     @Override
     public GoogleDriveResponseResource deleteFile(String fileId, String authToken) {
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(BASE_URL + "/delete").newBuilder()
+        HttpUrl.Builder urlBuilder = HttpUrl.parse(URL + "/delete").newBuilder()
                 .addQueryParameter("fileId", fileId);
 
         Request request = createRequestBuilder(urlBuilder.build(), authToken)

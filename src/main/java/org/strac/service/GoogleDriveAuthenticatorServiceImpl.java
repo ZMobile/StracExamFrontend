@@ -23,8 +23,8 @@ public class GoogleDriveAuthenticatorServiceImpl implements GoogleDriveAuthentic
     private HttpServer server;
     private ExecutorService executor;
 
-    public GoogleDriveAuthenticatorServiceImpl(SimpleTokenStorageService simpleTokenStorageService) {
-        this.dao = new GoogleDriveAuthenticatorDaoImpl();
+    public GoogleDriveAuthenticatorServiceImpl(String BASE_URL, SimpleTokenStorageService simpleTokenStorageService) {
+        this.dao = new GoogleDriveAuthenticatorDaoImpl(BASE_URL);
         this.tokenStorage = simpleTokenStorageService;
     }
 
