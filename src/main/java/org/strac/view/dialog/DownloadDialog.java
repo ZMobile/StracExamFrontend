@@ -131,7 +131,7 @@ public class DownloadDialog extends JDialog {
             }
         }
 
-        JOptionPane.showMessageDialog(this, "Download started!");
+        JOptionPane.showMessageDialog(this, "Download Successful!");
         dispose();
     }
 

@@ -2,11 +2,6 @@ package org.strac.service;
 
 import org.strac.model.CredentialsResource;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-
 public interface SimpleTokenStorageService {
     /**
      * Saves the credentials to a file.

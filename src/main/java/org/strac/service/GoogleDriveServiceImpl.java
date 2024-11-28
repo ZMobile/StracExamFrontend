@@ -43,6 +43,8 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     }
 
     public void uploadFile(String parentId, String filePath) {
+        System.out.println("Uploading file: " + filePath);
+        System.out.println("Parent ID: " + parentId);
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
         driveDao.uploadFile(parentId, accessToken, filePath);
     }

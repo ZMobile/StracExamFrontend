@@ -13,7 +13,9 @@ import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeWillExpandListener;
 import javax.swing.tree.*;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.event.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -144,7 +146,7 @@ public class GoogleDriveFileViewer extends JFrame {
         fileTree.setCellRenderer(new FileTreeCellRenderer(selectedFiles));
         fileTree.setEditable(false); // Disable editing to prevent renaming
         fileTree.setRootVisible(true); // Show the root node
-
+        fileTree.setTransferHandler(new FileDropHandler());
         fileTree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -405,4 +407,68 @@ public class GoogleDriveFileViewer extends JFrame {
             }
         }
     }
+
+    private class FileDropHandler extends TransferHandler {
+        @Override
+        public boolean canImport(TransferHandler.TransferSupport support) {
+            // Only accept file drops
+            return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) {
+                return false;
+            }
+
+            try {
+                // Get the dropped files
+                List<File> droppedFiles = (List<File>) support.getTransferable()
+                        .getTransferData(DataFlavor.javaFileListFlavor);
+
+                // Determine the drop location in the JTree
+                JTree.DropLocation dropLocation = (JTree.DropLocation) support.getDropLocation();
+                TreePath dropPath = dropLocation.getPath();
+                DefaultMutableTreeNode dropNode = (DefaultMutableTreeNode) dropPath.getLastPathComponent();
+
+                // Resolve the destination folder
+                DriveFile destinationFolder = null;
+                if (dropNode.getUserObject() instanceof DriveFile dropFile) {
+                    if ("application/vnd.google-apps.folder".equals(dropFile.getMimeType())) {
+                        destinationFolder = dropFile; // Dropped on a folder
+                    } else {
+                        destinationFolder = (DriveFile) ((DefaultMutableTreeNode) dropNode.getParent()).getUserObject();
+                    }
+                }
+
+                if (destinationFolder != null) {
+                    // Open the UploadDialog with the destination folder and dropped files
+                    UploadDialog uploadDialog = new UploadDialog(
+                            GoogleDriveFileViewer.this,
+                            driveService,
+                            fileViewerManager,
+                            treeModel,
+                            droppedFiles,
+                            destinationFolder
+                    );
+                    uploadDialog.setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(GoogleDriveFileViewer.this,
+                            "Invalid destination. Please drop on a folder or its parent.",
+                            "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+                return true;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(GoogleDriveFileViewer.this,
+                        "Failed to process dropped files.",
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+    }
+
 }

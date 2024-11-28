@@ -10,6 +10,7 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.*;
+import java.awt.datatransfer.DataFlavor;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.util.ArrayList;
@@ -26,17 +27,36 @@ public class UploadDialog extends JDialog {
     private FileViewerManager fileViewerManager;
     private DriveFile selectedDestinationFolder;
 
+    // Constructor for general use (no predefined destination or file list)
     public UploadDialog(JFrame parent, GoogleDriveService driveService, FileViewerManager fileViewerManager, DefaultTreeModel treeModel) {
+        this(parent, driveService, fileViewerManager, treeModel, new ArrayList<>(), null);
+    }
+
+    // Constructor for predefined destination and file list
+    public UploadDialog(JFrame parent, GoogleDriveService driveService, FileViewerManager fileViewerManager, DefaultTreeModel treeModel,
+                        List<File> predefinedFiles, DriveFile predefinedDestinationFolder) {
         super(parent, "Upload Files", true);
 
         this.driveService = driveService;
         this.fileViewerManager = fileViewerManager;
         this.treeModel = treeModel;
+        if (predefinedFiles != null) {
+            this.filesToUpload.addAll(predefinedFiles);
+        }
+        this.selectedDestinationFolder = predefinedDestinationFolder;
 
         setLayout(new BorderLayout());
         setSize(800, 500);
         setLocationRelativeTo(parent);
 
+        initializeUI();
+        if (predefinedDestinationFolder != null) {
+            destinationPathField.setText(predefinedDestinationFolder.getName());
+        }
+        populateFileTable();
+    }
+
+    private void initializeUI() {
         // Top panel: Destination path selector
         JPanel destinationPanel = new JPanel(new BorderLayout(5, 5));
         JLabel destinationLabel = new JLabel("Destination Folder:");
@@ -65,6 +85,9 @@ public class UploadDialog extends JDialog {
         JScrollPane fileScrollPane = new JScrollPane(fileTable);
         JButton addFileButton = new JButton("Add Files or Folders");
         addFileButton.addActionListener(this::addFilesOrFolders);
+
+        fileListPanel.setTransferHandler(new FileDropHandler());
+        fileTable.setTransferHandler(new FileDropHandler());
 
         fileListPanel.add(fileScrollPane, BorderLayout.CENTER);
         fileListPanel.add(addFileButton, BorderLayout.SOUTH);
@@ -97,6 +120,12 @@ public class UploadDialog extends JDialog {
         add(destinationPanel, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private void populateFileTable() {
+        for (File file : filesToUpload) {
+            tableModel.addRow(new Object[]{file.getName()});
+        }
     }
 
     private void addFilesOrFolders(ActionEvent event) {
@@ -145,7 +174,7 @@ public class UploadDialog extends JDialog {
         }
 
         fileViewerManager.refreshFolder(selectedDestinationFolder.getId());
-        JOptionPane.showMessageDialog(this, "Upload started!");
+        JOptionPane.showMessageDialog(this, "Upload Successful!");
         dispose();
     }
 
@@ -177,6 +206,40 @@ public class UploadDialog extends JDialog {
         @Override
         public void treeWillCollapse(javax.swing.event.TreeExpansionEvent event) {
             // No action needed
+        }
+    }
+
+    private class FileDropHandler extends TransferHandler {
+        @Override
+        public boolean canImport(TransferSupport support) {
+            // Only accept file drops
+            return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
+        }
+
+        @Override
+        public boolean importData(TransferSupport support) {
+            if (!canImport(support)) {
+                return false;
+            }
+
+            try {
+                // Get the dropped files
+                List<File> droppedFiles = (List<File>) support.getTransferable()
+                        .getTransferData(DataFlavor.javaFileListFlavor);
+
+                for (File file : droppedFiles) {
+                    if (!filesToUpload.contains(file)) {
+                        filesToUpload.add(file);
+                        tableModel.addRow(new Object[]{file.getName()});
+                    }
+                }
+
+                return true;
+            } catch (Exception e) {
+                e.printStackTrace();
+                JOptionPane.showMessageDialog(UploadDialog.this, "Failed to process dropped files.", "Error", JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
         }
     }
 }
