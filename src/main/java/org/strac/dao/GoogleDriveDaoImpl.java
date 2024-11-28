@@ -37,12 +37,11 @@ public class GoogleDriveDaoImpl implements GoogleDriveDao {
     }
 
     @Override
-    public GoogleDriveFileQueryResponseResource listFiles(String parentId, String authToken) {
-        HttpUrl.Builder urlBuilder = HttpUrl.parse(URL + "/files").newBuilder();
-        if (parentId != null && !parentId.isEmpty()) {
-            urlBuilder.addQueryParameter("parentId", parentId);
+    public GoogleDriveFileQueryResponseResource listFiles(DriveFile parent, String authToken) {
+        HttpUrl.Builder urlBuilder = Objects.requireNonNull(HttpUrl.parse(URL + "/files")).newBuilder();
+        if (parent.getId() != null && !parent.getId().isEmpty()) {
+            urlBuilder.addQueryParameter("parentId", parent.getId());
         }
-
         Request request = createRequestBuilder(urlBuilder.build(), authToken)
                 .get()
                 .build();

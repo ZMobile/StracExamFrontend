@@ -21,19 +21,36 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
         this.mimeTypeToExtensionTransformerService = new MimeTypeToExtensionTransformerServiceImpl();
     }
 
-    public List<DriveFile> listFiles(String parentId) {
+    public List<DriveFile> listFiles(DriveFile parent) {
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
-        GoogleDriveFileQueryResponseResource googleDriveFileQueryResponseResource = driveDao.listFiles(parentId, accessToken);
+        GoogleDriveFileQueryResponseResource googleDriveFileQueryResponseResource = driveDao.listFiles(parent, accessToken);
         if (googleDriveFileQueryResponseResource.getGoogleDriveResponseResource().isSuccess()) {
             for (DriveFile file : googleDriveFileQueryResponseResource.getFiles()) {
                 file.setExtension(mimeTypeToExtensionTransformerService.getFileExtensionFromMimeType(file.getMimeType()));
+                String rootPath;
+                if (parent.getId() == null) {
+                    rootPath = "Google Drive";
+                } else {
+                    rootPath = parent.getPath();
+                }
+                file.setPath(rootPath + "/" + file.getName());
             }
             return googleDriveFileQueryResponseResource.getFiles();
         } else if (googleDriveFileQueryResponseResource.getGoogleDriveResponseResource().getCode() == 403) {
             driveAuthenticatorService.refreshToken();
             accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
-            googleDriveFileQueryResponseResource = driveDao.listFiles(parentId, accessToken);
+            googleDriveFileQueryResponseResource = driveDao.listFiles(parent, accessToken);
             if (googleDriveFileQueryResponseResource.getGoogleDriveResponseResource().isSuccess()) {
+                for (DriveFile file : googleDriveFileQueryResponseResource.getFiles()) {
+                    file.setExtension(mimeTypeToExtensionTransformerService.getFileExtensionFromMimeType(file.getMimeType()));
+                    String rootPath;
+                    if (parent.getId() == null) {
+                        rootPath = "Google Drive";
+                    } else {
+                        rootPath = parent.getPath();
+                    }
+                    file.setPath(rootPath + "/" + file.getName());
+                }
                 return googleDriveFileQueryResponseResource.getFiles();
             } else {
                 throw new RuntimeException("Error listing files");
@@ -43,8 +60,6 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     }
 
     public void uploadFile(String parentId, String filePath) {
-        System.out.println("Uploading file: " + filePath);
-        System.out.println("Parent ID: " + parentId);
         String accessToken = simpleTokenStorageService.loadCredentials().getAccessToken();
         driveDao.uploadFile(parentId, accessToken, filePath);
     }

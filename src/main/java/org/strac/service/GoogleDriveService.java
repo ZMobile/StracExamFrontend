@@ -6,13 +6,12 @@ import java.util.List;
 
 public interface GoogleDriveService {
     /**
-     * List the files in a google drive folder.
-     *
-     * @param parentId The ID of the parent folder.
-     *
-     * @return The list of files in the folder.
-     */
-    List<DriveFile> listFiles(String parentId);
+        * List files in a folder in the Google Drive.
+        *
+        * @param parent The parent folder to list files from.
+        * @return The list of files in the folder.
+    */
+    List<DriveFile> listFiles(DriveFile parent);
 
     /**
      * Upload a file to the Google Drive.

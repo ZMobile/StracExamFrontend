@@ -33,10 +33,10 @@ public class MockGoogleDriveDao implements GoogleDriveDao {
     }
 
     @Override
-    public GoogleDriveFileQueryResponseResource listFiles(String parentId, String authToken) {
+    public GoogleDriveFileQueryResponseResource listFiles(DriveFile parent, String authToken) {
         List<DriveFile> result = new ArrayList<>();
         for (DriveFile file : files) {
-            if (parentId.equals(file.getParentId())) {
+            if (parent.getId().equals(file.getParentId())) {
                 result.add(file);
             }
         }

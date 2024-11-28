@@ -96,6 +96,8 @@ public class DownloadDialog extends JDialog {
     private List<DriveFile> consolidateFiles(List<DriveFile> selectedFiles) {
         List<DriveFile> consolidated = new ArrayList<>();
         for (DriveFile file : selectedFiles) {
+            System.out.println("File name: " + file);
+            System.out.println("File path: " + file.getPath());
             boolean isSuperFolder = consolidated.stream().anyMatch(parent -> file.getPath().startsWith(parent.getPath()));
             if (!isSuperFolder) {
                 consolidated.removeIf(parent -> parent.getPath().startsWith(file.getPath()));

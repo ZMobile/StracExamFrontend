@@ -144,11 +144,12 @@ public class FileViewerManager {
         SwingWorker<Void, DriveFile> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() {
-                String parentId = parentNode.getUserObject() instanceof DriveFile
-                        ? ((DriveFile) parentNode.getUserObject()).getId()
-                        : "root";
-
-                List<DriveFile> files = driveService.listFiles(parentId); // Call the service
+                DriveFile parent = parentNode.getUserObject() instanceof DriveFile
+                        ? ((DriveFile) parentNode.getUserObject())
+                        : new DriveFile("root", "Google Drive", "application/vnd.google-apps.folder", null, "Google Drive");
+                System.out.println("Loading files for parent: " + parent.getName());
+                List<DriveFile> files = driveService.listFiles(parent); // Call the service
+                System.out.println("Done loading files for parent: " + parent.getName());
                 for (DriveFile file : files) {
                     publish(file);
                 }

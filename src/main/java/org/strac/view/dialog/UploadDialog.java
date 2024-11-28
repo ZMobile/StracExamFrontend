@@ -191,7 +191,7 @@ public class UploadDialog extends JDialog {
             if (node.getChildCount() == 1 && node.getFirstChild().toString().equals("Loading...")) {
                 node.removeAllChildren();
                 DriveFile driveFile = (DriveFile) node.getUserObject();
-                List<DriveFile> children = driveService.listFiles(driveFile.getId());
+                List<DriveFile> children = driveService.listFiles(driveFile);
                 for (DriveFile child : children) {
                     DefaultMutableTreeNode childNode = new DefaultMutableTreeNode(child);
                     if (child.getMimeType() != null && child.getMimeType().equals("application/vnd.google-apps.folder")) {

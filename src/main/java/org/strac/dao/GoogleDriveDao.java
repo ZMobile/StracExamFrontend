@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 public interface GoogleDriveDao {
-    GoogleDriveFileQueryResponseResource listFiles(String parentId, String authToken);
+    GoogleDriveFileQueryResponseResource listFiles(DriveFile parent, String authToken);
 
     GoogleDriveResponseResource uploadFile(String parentId, String authToken, String filePath);
 
